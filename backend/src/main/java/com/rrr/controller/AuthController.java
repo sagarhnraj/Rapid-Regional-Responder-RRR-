@@ -3,6 +3,7 @@ package com.rrr.controller;
 import com.rrr.dto.ApiResponse;
 import com.rrr.dto.AuthRequest;
 import com.rrr.dto.AuthResponse;
+import com.rrr.dto.GoogleAuthRequest;
 import com.rrr.dto.RegisterRequest;
 import com.rrr.service.AuthService;
 import jakarta.validation.Valid;
@@ -27,5 +28,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleAuth(@Valid @RequestBody GoogleAuthRequest request) {
+        AuthResponse response = authService.googleAuth(request);
+        return ResponseEntity.ok(ApiResponse.ok("Google authentication processed", response));
     }
 }

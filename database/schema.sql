@@ -1,7 +1,7 @@
 -- Regional Rapid Responder (RRR) Database Schema for Aiven PostgreSQL
 
--- Enable UUID extension if available
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE SCHEMA IF NOT EXISTS rrr;
+SET search_path TO rrr;
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (

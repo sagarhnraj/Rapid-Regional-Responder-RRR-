@@ -2,11 +2,19 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { api } from '../services/api';
 
+export interface GoogleAuthResult {
+  requiresPhoneCompletion?: boolean;
+  email?: string;
+  name?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, phone: string, role: string) => Promise<void>;
+  register: (email: string, password: string, name: string, phone: string) => Promise<void>;
+  loginWithGoogle: (idToken: string, phone?: string) => Promise<GoogleAuthResult | void>;
+  onboardVolunteer: (skills: string[], maxRangeMeters: number) => Promise<void>;
   logout: () => void;
 }
 
@@ -56,8 +64,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userData);
   };
 
-  const register = async (email: string, password: string, name: string, phone: string, role: string) => {
-    const response = await api.post('/auth/register', { email, password, name, phone, role });
+  const register = async (email: string, password: string, name: string, phone: string) => {
+    const response = await api.post('/auth/register', { email, password, name, phone });
+    const { token, userId, email: userEmail, name: userName, role: userRole } = response.data.data;
+
+    const userData: User = { id: userId, email: userEmail, name: userName, role: userRole };
+    localStorage.setItem('rrr_token', token);
+    localStorage.setItem('rrr_user', JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const loginWithGoogle = async (idToken: string, phone?: string): Promise<GoogleAuthResult | void> => {
+    const response = await api.post('/auth/google', { idToken, phone });
+    const data = response.data.data;
+
+    if (data.requiresPhoneCompletion) {
+      return {
+        requiresPhoneCompletion: true,
+        email: data.email,
+        name: data.name
+      };
+    }
+
+    const { token, userId, email: userEmail, name: userName, role: userRole } = data;
+    const userData: User = { id: userId, email: userEmail, name: userName, role: userRole };
+    localStorage.setItem('rrr_token', token);
+    localStorage.setItem('rrr_user', JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const onboardVolunteer = async (skills: string[], maxRangeMeters: number) => {
+    const response = await api.post('/volunteers/onboard', { skills, maxRangeMeters });
     const { token, userId, email: userEmail, name: userName, role: userRole } = response.data.data;
 
     const userData: User = { id: userId, email: userEmail, name: userName, role: userRole };
@@ -73,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, onboardVolunteer, logout }}>
       {children}
     </AuthContext.Provider>
   );

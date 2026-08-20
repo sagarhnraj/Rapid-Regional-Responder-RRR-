@@ -1,8 +1,10 @@
 package com.rrr.controller;
 
 import com.rrr.dto.ApiResponse;
+import com.rrr.dto.AuthResponse;
 import com.rrr.dto.SOSResponseDto;
 import com.rrr.dto.VolunteerLocationDto;
+import com.rrr.dto.VolunteerOnboardRequest;
 import com.rrr.dto.VolunteerProfileDto;
 import com.rrr.security.UserPrincipal;
 import com.rrr.service.VolunteerService;
@@ -20,6 +22,14 @@ public class VolunteerController {
 
     @Autowired
     private VolunteerService volunteerService;
+
+    @PostMapping("/onboard")
+    public ResponseEntity<ApiResponse<AuthResponse>> onboardVolunteer(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestBody VolunteerOnboardRequest onboardDto) {
+        AuthResponse response = volunteerService.onboardVolunteer(currentUser.getId(), onboardDto);
+        return ResponseEntity.ok(ApiResponse.ok("Successfully onboarded as Volunteer", response));
+    }
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<VolunteerProfileDto>> getProfile(@AuthenticationPrincipal UserPrincipal currentUser) {

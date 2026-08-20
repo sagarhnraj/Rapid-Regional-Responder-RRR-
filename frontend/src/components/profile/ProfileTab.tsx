@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User as UserIcon, Phone, Heart, Plus, Edit2, Save, X } from 'lucide-react';
+import { User as UserIcon, Phone, Heart, Plus, Edit2, Save, X, ShieldAlert, CheckCircle } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { EmergencyContact, UserProfile } from '../../types';
@@ -9,8 +9,10 @@ export const ProfileTab: React.FC = () => {
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isAddingContact, setIsAddingContact] = useState(false);
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { user, logout } = useAuth();
+  const [volunteerSkills, setVolunteerSkills] = useState<string[]>(['First Aid', 'CPR']);
+  const { user, onboardVolunteer, logout } = useAuth();
 
   const [profileForm, setProfileForm] = useState({
     name: '',
@@ -85,6 +87,22 @@ export const ProfileTab: React.FC = () => {
     } catch (error) {
       console.error('Error deleting contact:', error);
     }
+  };
+
+  const handleVolunteerOnboarding = async () => {
+    try {
+      await onboardVolunteer(volunteerSkills, 1000);
+      setShowVolunteerModal(false);
+      alert('Volunteer onboarding complete! Volunteer privileges enabled.');
+    } catch (error) {
+      console.error('Error onboarding volunteer:', error);
+    }
+  };
+
+  const toggleSkill = (skill: string) => {
+    setVolunteerSkills(prev =>
+      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
+    );
   };
 
   if (loading) {
@@ -180,6 +198,33 @@ export const ProfileTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Become a Volunteer Banner / Onboarding Section */}
+      {user?.role !== 'VOLUNTEER' ? (
+        <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-xl p-6 text-white shadow-md space-y-3">
+          <div className="flex items-center space-x-2">
+            <ShieldAlert className="h-6 w-6" />
+            <h3 className="text-lg font-bold">Become a Volunteer Responder</h3>
+          </div>
+          <p className="text-sm opacity-90 leading-relaxed">
+            Help citizens in emergency situations within your 1 km radius. Join trained community responders in saving lives.
+          </p>
+          <button
+            onClick={() => setShowVolunteerModal(true)}
+            className="w-full bg-white text-red-600 hover:bg-red-50 font-bold py-3 rounded-lg shadow transition-colors"
+          >
+            Become a Volunteer
+          </button>
+        </div>
+      ) : (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center space-x-3 text-green-800">
+          <CheckCircle className="h-6 w-6 text-green-600" />
+          <div>
+            <p className="font-semibold">Volunteer Responder Active</p>
+            <p className="text-xs text-green-700">You have volunteer capabilities enabled on your RRR account.</p>
+          </div>
+        </div>
+      )}
+
       {/* Emergency Contacts Section */}
       <div className="bg-white rounded-xl p-6 shadow-sm border">
         <div className="flex justify-between items-center mb-4">
@@ -219,6 +264,49 @@ export const ProfileTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Volunteer Onboarding Modal */}
+      {showVolunteerModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900">Volunteer Onboarding</h3>
+            <p className="text-xs text-gray-600">Select your emergency skills to complete your volunteer registration:</p>
+
+            <div className="space-y-2">
+              {['First Aid', 'CPR', 'Fire Fighting', 'Emergency Navigation', 'Search & Rescue'].map((skill) => (
+                <label key={skill} className="flex items-center space-x-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={volunteerSkills.includes(skill)}
+                    onChange={() => toggleSkill(skill)}
+                    className="rounded text-red-600 focus:ring-red-500"
+                  />
+                  <span className="text-sm font-medium text-gray-800">{skill}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+              ℹ️ Maximum emergency response notification radius is capped at 1 km by system policy.
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                onClick={handleVolunteerOnboarding}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg font-semibold"
+              >
+                Complete Onboarding
+              </button>
+              <button
+                onClick={() => setShowVolunteerModal(false)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-lg font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Contact Modal */}
       {isAddingContact && (
