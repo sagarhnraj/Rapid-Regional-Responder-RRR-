@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
 
+    @NotBlank(message = "Google ID token is required for registration identity verification")
+    private String googleIdToken;
+
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     private String email;
@@ -17,11 +20,15 @@ public class RegisterRequest {
     @NotBlank(message = "Name is required")
     private String name;
 
-    private String phone = "";
+    @NotBlank(message = "Phone number is required")
+    private String phone;
 
-    private String role = "CITIZEN"; // CITIZEN, VOLUNTEER
+    private String role = "CITIZEN";
 
     public RegisterRequest() {}
+
+    public String getGoogleIdToken() { return googleIdToken; }
+    public void setGoogleIdToken(String googleIdToken) { this.googleIdToken = googleIdToken; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
