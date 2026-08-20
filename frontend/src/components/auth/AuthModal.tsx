@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Phone } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { isDemoMode } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,10 +13,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [role, setRole] = useState('CITIZEN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const { signUp, signIn } = useAuth();
+  const { login, register } = useAuth();
 
   if (!isOpen) return null;
 
@@ -28,13 +27,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     try {
       if (isSignUp) {
-        const result = await signUp(email, password, { name, phone });
-        if (result?.needsConfirmation) {
-          setShowConfirmation(true);
-          return;
-        }
+        await register(email, password, name, phone, role);
       } else {
-        await signIn(email, password);
+        await login(email, password);
       }
       onClose();
     } catch (err: any) {
@@ -43,57 +38,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setLoading(false);
     }
   };
-
-  if (showConfirmation) {
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
-          <div className="flex justify-between items-center p-6 border-b">
-            <h2 className="text-xl font-semibold">Check Your Email</h2>
-            <button
-              onClick={() => {
-                setShowConfirmation(false);
-                onClose();
-              }}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="p-6 text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="h-8 w-8 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Verify Your Email</h3>
-            <p className="text-gray-600 mb-4">
-              {isDemoMode ? (
-                <>This is a demo version. In a real deployment, we would send a verification link to <strong>{email}</strong>. For demo purposes, you can now sign in directly.</>
-              ) : (
-                <>We've sent a verification link to <strong>{email}</strong>. Please check your email and click the link to activate your account.</>
-              )}
-            </p>
-            {isDemoMode && (
-              <button
-                onClick={() => {
-                  setShowConfirmation(false);
-                  setIsSignUp(false);
-                  setError('');
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-              >
-                Continue to Sign In
-              </button>
-            )}
-            {!isDemoMode && (
-              <p className="text-sm text-gray-500">
-                After verification, you can sign in with your credentials.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -129,7 +73,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     placeholder="Enter your full name"
                     required
                   />
@@ -146,11 +90,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     placeholder="Enter your phone number"
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Type
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                >
+                  <option value="CITIZEN">Citizen (Request Help)</option>
+                  <option value="VOLUNTEER">Volunteer Responder</option>
+                </select>
               </div>
             </>
           )}
@@ -165,7 +123,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="Enter your email"
                 required
               />
@@ -182,7 +140,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="Enter your password"
                 minLength={6}
                 required
@@ -203,7 +161,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-red-600 hover:text-red-700 font-medium"
             >
               {isSignUp ? 'Sign In' : 'Create Account'}
             </button>

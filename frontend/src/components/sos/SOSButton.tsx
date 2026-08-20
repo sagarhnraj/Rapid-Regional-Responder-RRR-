@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Heart, Flame, Shield, HelpCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { SOSTypeModal } from './SOSTypeModal';
-import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 interface SOSButtonProps {
   onSOS: (type: string, location: { lat: number; lng: number }) => Promise<void>;
@@ -21,13 +20,6 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onSOS }) => {
 
   const handleTypeSelect = async (type: string) => {
     try {
-      // Get user profile for initiator information
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('name, phone')
-        .eq('user_id', user?.id)
-        .single();
-
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -42,8 +34,8 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onSOS }) => {
       });
     } catch (error) {
       console.error('Error getting location or sending SOS:', error);
-      // Still send SOS without location if geolocation fails
-      await onSOS(type, { lat: 0, lng: 0 });
+      // Fallback to default coordinates if geolocation is blocked
+      await onSOS(type, { lat: 12.9716, lng: 77.5946 });
     }
     setShowTypeModal(false);
   };
@@ -67,8 +59,8 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onSOS }) => {
 
         <div className="text-center max-w-sm">
           <p className="text-gray-600 text-sm leading-relaxed">
-            Press the SOS button to alert nearby volunteers and emergency services.
-            Your location will be shared to coordinate help.
+            Press the SOS button to alert nearby volunteers (&lt; 1km) and emergency services.
+            Your GPS location will be shared to coordinate help.
           </p>
         </div>
       </div>
