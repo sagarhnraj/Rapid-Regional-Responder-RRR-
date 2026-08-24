@@ -99,6 +99,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.rrr.RegionalResponderApplication</mainClass>
+                    <fork>false</fork>
                 </configuration>
             </plugin>
         </plugins>
