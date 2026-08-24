@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
 
-    @NotBlank(message = "Google ID token is required for registration identity verification")
     private String googleIdToken;
 
     @NotBlank(message = "Email is required")

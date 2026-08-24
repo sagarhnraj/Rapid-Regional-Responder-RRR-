@@ -73,17 +73,19 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String cleanEmail = request.getEmail().toLowerCase().trim();
 
-        // 1. Verify Google identity token provided during registration
-        JsonNode googleUser = parseAndVerifyGoogleToken(request.getGoogleIdToken());
-        String googleEmail = googleUser.path("email").asText("").toLowerCase().trim();
-        boolean emailVerified = googleUser.path("email_verified").asBoolean(false);
+        // 1. Verify Google identity token provided during registration (optional for direct registration)
+        if (request.getGoogleIdToken() != null && !request.getGoogleIdToken().trim().isEmpty()) {
+            JsonNode googleUser = parseAndVerifyGoogleToken(request.getGoogleIdToken());
+            String googleEmail = googleUser.path("email").asText("").toLowerCase().trim();
+            boolean emailVerified = googleUser.path("email_verified").asBoolean(false);
 
-        if (googleEmail.isEmpty() || !emailVerified) {
-            throw new BadRequestException("Registration failed: Invalid Google identity token");
-        }
+            if (googleEmail.isEmpty() || !emailVerified) {
+                throw new BadRequestException("Registration failed: Invalid Google identity token");
+            }
 
-        if (!cleanEmail.equalsIgnoreCase(googleEmail)) {
-            throw new BadRequestException("Registration failed: Submitted email does not match Google-verified identity email");
+            if (!cleanEmail.equalsIgnoreCase(googleEmail)) {
+                throw new BadRequestException("Registration failed: Submitted email does not match Google-verified identity email");
+            }
         }
 
         if (userRepository.existsByEmail(cleanEmail)) {
