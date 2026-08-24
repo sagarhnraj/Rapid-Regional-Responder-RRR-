@@ -73,29 +73,32 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String cleanEmail = request.getEmail().toLowerCase().trim();
 
-        // 1. Verify Google identity token provided during registration (optional for direct registration)
-        if (request.getGoogleIdToken() != null && !request.getGoogleIdToken().trim().isEmpty()) {
-            JsonNode googleUser = parseAndVerifyGoogleToken(request.getGoogleIdToken());
-            String googleEmail = googleUser.path("email").asText("").toLowerCase().trim();
-            boolean emailVerified = googleUser.path("email_verified").asBoolean(false);
-
-            if (googleEmail.isEmpty() || !emailVerified) {
-                throw new BadRequestException("Registration failed: Invalid Google identity token");
-            }
-
-            if (!cleanEmail.equalsIgnoreCase(googleEmail)) {
-                throw new BadRequestException("Registration failed: Submitted email does not match Google-verified identity email");
-            }
+        if (request.getGoogleIdToken() == null || request.getGoogleIdToken().trim().isEmpty()) {
+            throw new BadRequestException("Registration failed: Google identity verification is required. Please verify with Google.");
         }
 
+        // 1. Verify Google identity token provided during registration
+        JsonNode googleUser = parseAndVerifyGoogleToken(request.getGoogleIdToken());
+        String googleEmail = googleUser.path("email").asText("").toLowerCase().trim();
+
+        if (googleEmail.isEmpty()) {
+            throw new BadRequestException("Registration failed: Could not verify email from Google identity token.");
+        }
+
+        // 2. Enforce Email Match Rule: Registration email MUST match Google-verified email.
+        if (!cleanEmail.equalsIgnoreCase(googleEmail)) {
+            throw new BadRequestException("Google account email (" + googleEmail + ") does not match the registration email (" + cleanEmail + "). Registration rejected.");
+        }
+
+        // 3. Check for existing account with this email
         if (userRepository.existsByEmail(cleanEmail)) {
-            throw new ConflictException("An RRR account with email '" + cleanEmail + "' already exists. Please log in using your RRR Email and Password.");
+            throw new ConflictException("An RRR account with this email already exists. Please log in using your RRR Email and Password.");
         }
 
-        // STRICT SECURITY RULE: Hardcode role to CITIZEN for public registration.
+        // 4. Role is strictly hardcoded to CITIZEN for public registration
         String role = "CITIZEN";
 
-        // BCrypt password hashing
+        // 5. BCrypt password hashing
         User user = new User(
                 cleanEmail,
                 passwordEncoder.encode(request.getPassword()),
@@ -106,14 +109,7 @@ public class AuthService {
         UserProfile profile = new UserProfile(user, request.getName(), request.getPhone(), "");
         userProfileRepository.save(profile);
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(cleanEmail, request.getPassword())
-        );
-
-        String jwt = tokenProvider.generateToken(authentication);
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-
-        return new AuthResponse(jwt, principal.getId(), principal.getEmail(), profile.getName(), principal.getRole());
+        return new AuthResponse("", user.getId(), user.getEmail(), profile.getName(), user.getRole());
     }
 
     public AuthResponse login(AuthRequest request) {
@@ -131,20 +127,36 @@ public class AuthService {
         return new AuthResponse(jwt, principal.getId(), principal.getEmail(), name, principal.getRole());
     }
 
-    private JsonNode parseAndVerifyGoogleToken(String idToken) {
-        if ("mock_google_id_token_demo".equals(idToken)) {
-            // For testing/demo fallback when no live Google client ID is connected
+    private JsonNode parseAndVerifyGoogleToken(String token) {
+        if ("mock_google_id_token_demo".equals(token)) {
             try {
                 return objectMapper.readTree("{\"email\":\"verified_user@gmail.com\", \"name\":\"Verified User\", \"email_verified\": true}");
             } catch (Exception ignored) {}
         }
 
-        String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+        // 1. Try id_token parameter with Google tokeninfo endpoint
         try {
+            String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + token;
             String jsonResponse = restTemplate.getForObject(tokenInfoUrl, String.class);
-            return objectMapper.readTree(jsonResponse);
-        } catch (Exception e) {
-            throw new BadRequestException("Invalid or expired Google authentication token");
-        }
+            JsonNode node = objectMapper.readTree(jsonResponse);
+            if (node.has("email")) {
+                return node;
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Try access_token parameter with Google userinfo endpoint
+        try {
+            String userinfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setBearerAuth(token);
+            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(userinfoUrl, org.springframework.http.HttpMethod.GET, entity, String.class);
+            JsonNode node = objectMapper.readTree(response.getBody());
+            if (node.has("email")) {
+                return node;
+            }
+        } catch (Exception ignored) {}
+
+        throw new BadRequestException("Invalid or expired Google authentication token");
     }
 }
