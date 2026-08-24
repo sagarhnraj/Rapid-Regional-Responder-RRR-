@@ -7,9 +7,9 @@ ENV MAVEN_OPTS="-Xmx384m -XX:+UseG1GC"
 COPY pom.xml .
 COPY src ./src
 
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -Dmaven.test.skip=true -B
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/regional-responder-backend-1.0.0.jar app.jar
 EXPOSE 8080
