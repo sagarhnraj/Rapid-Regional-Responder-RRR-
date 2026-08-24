@@ -4,14 +4,12 @@ WORKDIR /app
 
 ENV MAVEN_OPTS="-Xmx384m -XX:+UseG1GC"
 
-COPY backend/pom.xml .
-COPY backend/src ./src
-
-RUN mvn clean package -DskipTests -B
+COPY . .
+RUN if [ -f "pom.xml" ]; then mvn clean package -DskipTests -B && mkdir -p /app/build_output && cp target/*.jar /app/build_output/; else cd backend && mvn clean package -DskipTests -B && mkdir -p /app/build_output && cp target/*.jar /app/build_output/; fi
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/build_output/*.jar app.jar
 EXPOSE 8080
 
 ENV JAVA_OPTS="-Xmx384m -XX:+UseG1GC"
