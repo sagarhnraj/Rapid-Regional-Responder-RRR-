@@ -83,7 +83,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     setLoading(true);
 
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '884177726487-demo.apps.googleusercontent.com';
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    if (!googleClientId || googleClientId.trim() === '' || googleClientId.includes('demo.apps.googleusercontent.com')) {
+      setError('Google OAuth Client ID is not configured. Please set the VITE_GOOGLE_CLIENT_ID environment variable in Vercel Project Settings with your Google Cloud Web Application Client ID.');
+      setLoading(false);
+      return;
+    }
 
     // Launch Real Google OAuth Identity Services Popup
     if (window.google?.accounts?.oauth2) {
@@ -93,7 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           scope: 'openid email profile',
           callback: async (response: any) => {
             if (response.error) {
-              setError('Google verification cancelled or failed.');
+              setError('Google verification cancelled or failed: ' + (response.error_description || response.error));
               setLoading(false);
               return;
             }
@@ -103,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               try {
                 await register(token, email, password, name, phone);
                 setIsSignUp(false); // Switch to Login
-                setSuccessMessage('Registration successful! Please log in using your email and password.');
+                setSuccessMessage('Registration successful! Please log in using your RRR Email and Password.');
                 setPassword('');
                 setConfirmPassword('');
               } catch (err: any) {
@@ -119,22 +125,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         });
         tokenClient.requestAccessToken({ prompt: 'select_account' });
       } catch (err: any) {
-        setError('Failed to launch Google OAuth popup. Please try again.');
+        setError('Failed to launch Google OAuth popup. Please verify your Google Client ID configuration.');
         setLoading(false);
       }
     } else {
-      // Fallback if Google GIS script is blocked or offline
-      try {
-        await register('mock_google_id_token_demo', email, password, name, phone);
-        setIsSignUp(false);
-        setSuccessMessage('Registration successful! Please log in using your email and password.');
-        setPassword('');
-        setConfirmPassword('');
-      } catch (err: any) {
-        setError(err.message || 'Registration failed.');
-      } finally {
-        setLoading(false);
-      }
+      setError('Google Identity Services library loading. Please wait a moment and try again.');
+      setLoading(false);
     }
   };
 
