@@ -1,15 +1,15 @@
 # Multi-stage Docker build for Java Spring Boot on Render
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
 WORKDIR /app
 
-ENV MAVEN_OPTS="-Xmx384m -XX:+UseG1GC"
+ENV MAVEN_OPTS="-Xmx384m -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3"
 
 COPY backend/pom.xml ./pom.xml
 COPY backend/src ./src
 
 RUN mvn clean package -DskipTests -B
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/app.jar app.jar
 EXPOSE 8080
