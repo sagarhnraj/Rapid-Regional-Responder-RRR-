@@ -93,13 +93,13 @@
     </dependencies>
 
     <build>
+        <finalName>app</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.rrr.RegionalResponderApplication</mainClass>
-                    <fork>false</fork>
                 </configuration>
             </plugin>
         </plugins>
