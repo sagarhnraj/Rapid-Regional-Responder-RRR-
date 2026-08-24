@@ -128,42 +128,41 @@ public class AuthService {
     }
 
     private JsonNode parseAndVerifyGoogleToken(String token) {
-        if ("mock_google_id_token_demo".equals(token)) {
-            try {
-                return objectMapper.readTree("{\"email\":\"verified_user@gmail.com\", \"name\":\"Verified User\", \"email_verified\": true}");
-            } catch (Exception ignored) {}
+        if (token == null || token.trim().isEmpty()) {
+            throw new BadRequestException("Google authentication token is missing");
         }
 
-        // 1. Try as id_token with Google tokeninfo
+        // 1. Try id_token parameter with Google tokeninfo
         try {
             String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + token;
             String jsonResponse = restTemplate.getForObject(tokenInfoUrl, String.class);
-            JsonNode node = objectMapper.readTree(jsonResponse);
-            if (node.has("email")) {
-                return node;
+            if (jsonResponse != null) {
+                JsonNode node = objectMapper.readTree(jsonResponse);
+                if (node.has("email")) {
+                    return node;
+                }
             }
         } catch (Exception ignored) {}
 
-        // 2. Try as access_token with Google tokeninfo
+        // 2. Try access_token with Google UserInfo endpoint using standard Bearer authorization header
         try {
-            String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?access_token=" + token;
-            String jsonResponse = restTemplate.getForObject(tokenInfoUrl, String.class);
-            JsonNode node = objectMapper.readTree(jsonResponse);
-            if (node.has("email")) {
-                return node;
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode node = objectMapper.readTree(response.getBody());
+                if (node.has("email")) {
+                    return node;
+                }
             }
         } catch (Exception ignored) {}
 
-        // 3. Try as access_token with Google userinfo
-        try {
-            String userinfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + token;
-            String jsonResponse = restTemplate.getForObject(userinfoUrl, String.class);
-            JsonNode node = objectMapper.readTree(jsonResponse);
-            if (node.has("email")) {
-                return node;
-            }
-        } catch (Exception ignored) {}
-
-        throw new BadRequestException("Invalid or expired Google authentication token");
+        throw new BadRequestException("Invalid or expired Google authentication token. Verification with Google failed.");
     }
 }
