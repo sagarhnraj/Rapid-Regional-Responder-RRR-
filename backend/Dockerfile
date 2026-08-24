@@ -1,4 +1,4 @@
-# Multi-stage Docker build for Java Spring Boot on Render (Memory Optimized for 512MB RAM)
+# Multi-stage Docker build for Java Spring Boot on Render
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
