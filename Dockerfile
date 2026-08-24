@@ -2,10 +2,10 @@
 FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
 WORKDIR /app
 
-ENV MAVEN_OPTS="-Xmx384m -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3"
+ENV MAVEN_OPTS="-Xmx384m -XX:+UseG1GC"
 
-COPY backend/pom.xml ./pom.xml
-COPY backend/src ./src
+COPY pom.xml .
+COPY src ./src
 
 RUN mvn clean package -DskipTests -B
 
