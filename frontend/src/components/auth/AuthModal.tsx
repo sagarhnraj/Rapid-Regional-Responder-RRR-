@@ -83,13 +83,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     setLoading(true);
 
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-    if (!googleClientId || googleClientId.trim() === '' || googleClientId.includes('demo.apps.googleusercontent.com')) {
-      setError('Google OAuth Client ID is not configured. Please set the VITE_GOOGLE_CLIENT_ID environment variable in Vercel Project Settings with your Google Cloud Web Application Client ID.');
-      setLoading(false);
-      return;
-    }
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '921251241673-m7fuf4pprtrh4o1t9s9ajd34qif60sq2.apps.googleusercontent.com';
 
     // Launch Real Google OAuth Identity Services Popup
     if (window.google?.accounts?.oauth2) {
