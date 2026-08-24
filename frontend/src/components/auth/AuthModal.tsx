@@ -91,9 +91,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
           scope: 'openid email profile',
+          error_callback: (err: any) => {
+            setError(`Google OAuth Error (${err.type || 'origin_error'}): Origin '${window.location.origin}' is not registered under Authorized JavaScript Origins for Client ID ${googleClientId} in Google Cloud Console.`);
+            setLoading(false);
+          },
           callback: async (response: any) => {
             if (response.error) {
-              setError('Google verification cancelled or failed: ' + (response.error_description || response.error));
+              setError(`Google verification failed: ${response.error_description || response.error}. Please ensure '${window.location.origin}' is listed in Authorized JavaScript Origins in Google Cloud Console.`);
               setLoading(false);
               return;
             }
