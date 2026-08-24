@@ -9,10 +9,10 @@ COPY backend/src ./src
 
 RUN mvn clean package -Dmaven.test.skip=true -B
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 WORKDIR /app
-COPY --from=build /app/target/regional-responder-backend-1.0.0.jar app.jar
+COPY --from=build /app/target/regional-responder-backend-1.0.0.jar /app/app.jar
 EXPOSE 8080
 
 ENV JAVA_OPTS="-Xmx384m -XX:+UseG1GC"
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

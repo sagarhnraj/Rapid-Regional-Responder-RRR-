@@ -134,7 +134,7 @@ public class AuthService {
             } catch (Exception ignored) {}
         }
 
-        // 1. Try id_token parameter with Google tokeninfo endpoint
+        // 1. Try as id_token with Google tokeninfo
         try {
             String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + token;
             String jsonResponse = restTemplate.getForObject(tokenInfoUrl, String.class);
@@ -144,14 +144,21 @@ public class AuthService {
             }
         } catch (Exception ignored) {}
 
-        // 2. Try access_token parameter with Google userinfo endpoint
+        // 2. Try as access_token with Google tokeninfo
         try {
-            String userinfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-            headers.setBearerAuth(token);
-            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
-            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(userinfoUrl, org.springframework.http.HttpMethod.GET, entity, String.class);
-            JsonNode node = objectMapper.readTree(response.getBody());
+            String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?access_token=" + token;
+            String jsonResponse = restTemplate.getForObject(tokenInfoUrl, String.class);
+            JsonNode node = objectMapper.readTree(jsonResponse);
+            if (node.has("email")) {
+                return node;
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Try as access_token with Google userinfo
+        try {
+            String userinfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + token;
+            String jsonResponse = restTemplate.getForObject(userinfoUrl, String.class);
+            JsonNode node = objectMapper.readTree(jsonResponse);
             if (node.has("email")) {
                 return node;
             }
