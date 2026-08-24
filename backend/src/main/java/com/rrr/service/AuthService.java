@@ -148,7 +148,7 @@ public class AuthService {
         try {
             org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
             headers.set("Authorization", "Bearer " + token);
-            org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
+            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
             org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
                     "https://www.googleapis.com/oauth2/v3/userinfo",
                     org.springframework.http.HttpMethod.GET,
