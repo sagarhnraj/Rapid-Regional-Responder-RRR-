@@ -69,13 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (googleIdToken: string, email: string, password: string, name: string, phone: string) => {
-    const response = await api.post('/auth/register', { googleIdToken, email, password, name, phone });
-    const { token, userId, email: userEmail, name: userName, role: userRole } = response.data.data;
-
-    const userData: User = { id: userId, email: userEmail, name: userName, role: userRole };
-    localStorage.setItem('rrr_token', token);
-    localStorage.setItem('rrr_user', JSON.stringify(userData));
-    setUser(userData);
+    await api.post('/auth/register', { googleIdToken, email, password, name, phone });
   };
 
   const onboardVolunteer = async (skills: string[], maxRangeMeters: number) => {
