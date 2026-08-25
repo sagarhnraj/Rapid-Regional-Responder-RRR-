@@ -108,13 +108,13 @@ public class AuthService {
                 passwordEncoder.encode(password),
                 "CITIZEN"
         );
-        user = userRepository.save(user);
+        user = userRepository.saveAndFlush(user);
 
         String safeName = name != null && !name.trim().isEmpty() ? name.trim() : "Citizen";
         String safePhone = phone != null ? phone.trim() : "";
 
         UserProfile profile = new UserProfile(user, safeName, safePhone, "");
-        userProfileRepository.save(profile);
+        userProfileRepository.saveAndFlush(profile);
 
         log.info("Successfully created new CITIZEN user account for email: {}", email);
         return new AuthResponse("", user.getId(), user.getEmail(), profile.getName(), user.getRole());

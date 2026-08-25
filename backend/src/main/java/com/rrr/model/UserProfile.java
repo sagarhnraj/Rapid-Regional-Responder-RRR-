@@ -33,17 +33,24 @@ public class UserProfile {
 
     public UserProfile(User user, String name, String phone, String medicalInfo) {
         this.user = user;
-        this.userId = user.getId();
-        this.name = name;
-        this.phone = phone;
-        this.medicalInfo = medicalInfo;
+        if (user != null) {
+            this.userId = user.getId();
+        }
+        this.name = name != null ? name : "";
+        this.phone = phone != null ? phone : "";
+        this.medicalInfo = medicalInfo != null ? medicalInfo : "";
     }
 
     public UUID getUserId() { return userId; }
     public void setUserId(UUID userId) { this.userId = userId; }
 
     public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public void setUser(User user) {
+        this.user = user;
+        if (user != null) {
+            this.userId = user.getId();
+        }
+    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

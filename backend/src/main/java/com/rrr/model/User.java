@@ -9,8 +9,8 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Column(nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -24,9 +24,14 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    public User() {}
+    public User() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
 
     public User(String email, String passwordHash, String role) {
+        this.id = UUID.randomUUID();
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
