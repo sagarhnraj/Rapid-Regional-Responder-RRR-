@@ -3,6 +3,7 @@ package com.rrr.exception;
 import com.rrr.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -51,13 +52,32 @@ public class GlobalExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.ok("Validation failed", errors));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("Validation failed: " + errors.values().stream().findFirst().orElse("Invalid input")));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.error("Data integrity violation: ", ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error("An account with this information already exists. Please log in using your RRR Email and Password."));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+        Throwable cause = ex;
+        while (cause != null) {
+            if (cause instanceof BadRequestException) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(cause.getMessage()));
+            }
+            if (cause instanceof ConflictException) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(cause.getMessage()));
+            }
+            if (cause instanceof DataIntegrityViolationException) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error("An account with this information already exists. Please log in using your RRR Email and Password."));
+            }
+            cause = cause.getCause();
+        }
         log.error("Unhandled exception encountered: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An internal server error occurred. Please try again later."));
+                .body(ApiResponse.error(ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : "An internal server error occurred. Please try again later."));
     }
 }

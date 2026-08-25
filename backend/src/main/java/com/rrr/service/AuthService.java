@@ -14,6 +14,8 @@ import com.rrr.repository.UserProfileRepository;
 import com.rrr.repository.UserRepository;
 import com.rrr.security.JwtTokenProvider;
 import com.rrr.security.UserPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,10 +27,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -58,7 +61,6 @@ public class AuthService {
             throw new BadRequestException("Google identity verification failed: Email not verified by Google");
         }
 
-        // Rule: If Google-verified email already exists, do NOT create duplicate or auto-login. Direct user to Email+Password login.
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("An RRR account with email '" + email + "' already exists. Please log in using your RRR Email and Password.");
         }
@@ -69,7 +71,6 @@ public class AuthService {
         return response;
     }
 
-    @Transactional
     public AuthResponse register(RegisterRequest request) {
         String cleanEmail = request.getEmail().toLowerCase().trim();
 
@@ -95,20 +96,27 @@ public class AuthService {
             throw new ConflictException("An RRR account with this email already exists. Please log in using your RRR Email and Password.");
         }
 
-        // 4. Role is strictly hardcoded to CITIZEN for public registration
-        String role = "CITIZEN";
+        // 4. Create CITIZEN user inside database transaction
+        return createCitizenUser(cleanEmail, request.getPassword(), request.getName(), request.getPhone());
+    }
 
-        // 5. BCrypt password hashing
+    @Transactional
+    public AuthResponse createCitizenUser(String email, String password, String name, String phone) {
+        // Role is strictly hardcoded to CITIZEN for public registration
         User user = new User(
-                cleanEmail,
-                passwordEncoder.encode(request.getPassword()),
-                role
+                email,
+                passwordEncoder.encode(password),
+                "CITIZEN"
         );
         user = userRepository.save(user);
 
-        UserProfile profile = new UserProfile(user, request.getName(), request.getPhone(), "");
+        String safeName = name != null && !name.trim().isEmpty() ? name.trim() : "Citizen";
+        String safePhone = phone != null ? phone.trim() : "";
+
+        UserProfile profile = new UserProfile(user, safeName, safePhone, "");
         userProfileRepository.save(profile);
 
+        log.info("Successfully created new CITIZEN user account for email: {}", email);
         return new AuthResponse("", user.getId(), user.getEmail(), profile.getName(), user.getRole());
     }
 
