@@ -33,7 +33,7 @@ public class UserProfile {
 
     public UserProfile(User user, String name, String phone, String medicalInfo) {
         this.user = user;
-        if (user != null) {
+        if (user != null && user.getId() != null) {
             this.userId = user.getId();
         }
         this.name = name != null ? name : "";
@@ -47,7 +47,7 @@ public class UserProfile {
     public User getUser() { return user; }
     public void setUser(User user) {
         this.user = user;
-        if (user != null) {
+        if (user != null && user.getId() != null) {
             this.userId = user.getId();
         }
     }
