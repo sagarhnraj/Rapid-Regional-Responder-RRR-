@@ -1,8 +1,8 @@
 package com.rrr.exception;
 
 import com.rrr.dto.ApiResponse;
-import org.slf.Logger;
-import org.slf.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;

@@ -66,7 +66,7 @@ public class VolunteerService {
 
         profile.setIsAvailable(true);
         if (onboardDto.getMaxRangeMeters() != null) profile.setMaxRangeMeters(onboardDto.getMaxRangeMeters());
-        if (onboardDto.getSkills() != null) profile.setSkills(onboardDto.getSkills());
+        if (onboardDto.getSkills() != null) profile.setSkills(onboardDto.getSkills().toArray(new String[0]));
         if (onboardDto.getLatitude() != null) profile.setLatitude(onboardDto.getLatitude());
         if (onboardDto.getLongitude() != null) profile.setLongitude(onboardDto.getLongitude());
 
